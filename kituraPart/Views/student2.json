@@ -1,7 +1,10 @@
-
 {
-"9h-11h": "Palais Brogniart",
-"11h15-13h15": "Palais Brogniart",
-"14h15-16h15": "Panoramas",
-"16h30-18h30": "Palais Brogniart"
+	{
+		"course": "ruby",
+		"start": "9.00am",
+		"end": "11.00am",
+		"latitude": "48.8688356",
+		"longitude": "2.3414426",
+		"range": "500meters"
+	}
 }
