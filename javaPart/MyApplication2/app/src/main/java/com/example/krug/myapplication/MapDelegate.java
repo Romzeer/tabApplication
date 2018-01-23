@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.widget.ArrayAdapter;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -13,6 +14,9 @@ import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by romzeer on 10/01/18.
  */
@@ -20,6 +24,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 public class MapDelegate implements OnMapReadyCallback, LocationListener {
 
     private GoogleMap mMap;
+    ArrayAdapter<MainActivity.Horaire> listAdapter;
+    List<MainActivity.Horaire> tableau = new ArrayList<MainActivity.Horaire>();
 
         /** Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -35,17 +41,26 @@ public class MapDelegate implements OnMapReadyCallback, LocationListener {
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        //CircleOptions circleOptions = new CircleOptions()
+          //      .center(new LatLng(Double.parseDouble(h.Latitude), Double.parseDouble(h.Longitude)))
+            //    .radius(Double.parseDouble(h.Marge));
+        //Circle circle = mMap.addCircle(circleOptions);
+        System.out.println("prout");
+        for (MainActivity.Horaire g: tableau) {
+            CircleOptions circleOptions = new CircleOptions()
+                  .center(new LatLng(Double.parseDouble(g.Latitude), Double.parseDouble(g.Longitude)))
+                .radius(Double.parseDouble(g.Marge));
+            Circle circle = mMap.addCircle(circleOptions);
+        }
 
-        CircleOptions circleOptions = new CircleOptions()
-                .center(new LatLng(48.8691495, 2.3392181))
-                .radius(1000);
-        Circle circle = mMap.addCircle(circleOptions);
+
+       //
        mMap.setMyLocationEnabled(true);
 
+    }
+
+    public void setTableau (List<MainActivity.Horaire> tableau) {
+        this.tableau = tableau;
     }
 
 

@@ -3,10 +3,13 @@ package com.example.krug.myapplication;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.location.LocationManager;
+import android.net.Uri;
+import android.os.RemoteException;
+import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.BottomNavigationView;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -16,21 +19,53 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.widget.HorizontalScrollView;
+import android.widget.ListAdapter;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 
+
 import com.google.android.gms.maps.SupportMapFragment;
+
+import org.altbeacon.beacon.BeaconConsumer;
+import org.altbeacon.beacon.BeaconManager;
+import org.altbeacon.beacon.BeaconParser;
+import org.altbeacon.beacon.MonitorNotifier;
+import org.altbeacon.beacon.Region;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.support.v4.content.PermissionChecker.PERMISSION_GRANTED;
 
-public class MainActivity extends AppCompatActivity {
+import mobi.inthepocket.android.beacons.ibeaconscanner.Beacon;
+import mobi.inthepocket.android.beacons.ibeaconscanner.Error;
+import mobi.inthepocket.android.beacons.ibeaconscanner.IBeaconScanner;
+
+
+public class MainActivity extends AppCompatActivity implements ListFragment.OnFragmentInteractionListener, BeaconConsumer
+{
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -43,11 +78,35 @@ public class MainActivity extends AppCompatActivity {
     private SectionsPagerAdapter mSectionsPagerAdapter;
     private LocationManager lm;
     MapDelegate md = new MapDelegate();
+    ListFragment listFragment;
+    final List<Horaire> tableau = new ArrayList<Horaire>();
+    private BeaconManager beaconManager;
+    protected static final String TAG = "MonitoringActivity";
+
+
 
     /**
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
+    }
+
+
+    class Horaire {
+        public String HeuresD;
+        public String HeuresF;
+        public String Lieu;
+        public String Latitude;
+        public String Longitude;
+        public String Marge;
+        public String Cours;
+    }
+
+
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
@@ -75,15 +134,23 @@ public class MainActivity extends AppCompatActivity {
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+        BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this);
+        beaconManager.getBeaconParsers().add(new BeaconParser().
+                setBeaconLayout("m:0-3=4c000215,i:4-19,i:20-21,i:22-23,p:24-24"));
+        beaconManager.bind(this);
+
+        listFragment = new ListFragment();
 
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         final BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+
     mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
         @Override
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -105,7 +172,87 @@ public class MainActivity extends AppCompatActivity {
 
         }
     });
+
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                try {
+                    URL u = new URL("http://172.16.4.218:8080/courses/student1");
+                    HttpURLConnection urlConnection = (HttpURLConnection) u.openConnection();
+
+                    InputStream dataIn = urlConnection.getInputStream();
+                    InputStreamReader isr = new InputStreamReader(dataIn);
+                    BufferedReader bsr = new BufferedReader(isr);
+                    // Log.e("LECT", bsr.readLine());
+                    String page = "";
+                    String line = bsr.readLine();
+                    while (line != null) {
+                        page = page + "\n" + line;
+                        line = bsr.readLine();
+                    }
+
+                    JSONObject o = new JSONObject(page);
+                    JSONArray t = o.getJSONArray("cours");
+
+
+
+                    for(int i = 0; i <t.length() ; i++) {
+                        JSONObject sub = t.getJSONObject(i);
+                        Horaire h = new Horaire();
+                        h.HeuresD = sub.getString("start");
+                        h.HeuresF = sub.getString("end");
+                        h.Lieu = sub.getString("place");
+                        h.Latitude = sub.getString("latitude");
+                        h.Longitude = sub.getString("longitude");
+                        h.Marge = sub.getString("range");
+                        h.Cours = sub.getString("course");
+                        tableau.add(h);
+                        //md.createCircle(h);
+                    }
+
+                    listFragment.setData(tableau);
+
+
+
+
+                    // le passer au fragment
+                } catch(MalformedURLException nfe) {
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        t.start();
+
     }
+    @Override
+    public void onBeaconServiceConnect() {
+        beaconManager.addMonitorNotifier(new MonitorNotifier() {
+            @Override
+            public void didEnterRegion(Region region) {
+                Log.i(TAG, "I just saw an beacon for the first time!");
+            }
+
+            @Override
+            public void didExitRegion(Region region) {
+                Log.i(TAG, "I no longer see an beacon");
+            }
+
+            @Override
+            public void didDetermineStateForRegion(int state, Region region) {
+                Log.i(TAG, "I have just switched from seeing/not seeing beacons: "+state);
+            }
+        });
+
+        try {
+            beaconManager.startMonitoringBeaconsInRegion(new Region("F2A74FC4-7625-44DB-9B08-CB7E130B2029", null, null, null));
+        } catch (RemoteException e) {    }
+    }
+
 
 
     @Override
@@ -166,7 +313,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
@@ -187,18 +333,23 @@ public class MainActivity extends AppCompatActivity {
 
                 mapFragment.getMapAsync(md);
 
-                lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
 
                 if (ActivityCompat.checkSelfPermission(MainActivity.this, ACCESS_FINE_LOCATION) != PERMISSION_GRANTED) {
                     String[] permissions = {ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION};
                     requestPermissions(permissions, 666);
                 }
                 lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000L, 500.0f, md);
+                md.setTableau(tableau);
                 mapFragment.getMapAsync(md);
+
 
                 return mapFragment;
 
-            }else{
+            }else if (position == 1) {
+                return listFragment;
+
+            } else {
                 return PlaceholderFragment.newInstance(position + 1);
             }
         }
@@ -210,6 +361,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+
     @SuppressLint("MissingPermission")
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -220,4 +373,7 @@ public class MainActivity extends AppCompatActivity {
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
+
+
+
 }
