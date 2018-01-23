@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="mobi.inthepocket.android:ibeaconscanner-1.2.2">
+    <CLASSES>
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/ibeaconscanner-1.2.2.aar/8442752223934f078775db48821f3923/res" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/ibeaconscanner-1.2.2.aar/8442752223934f078775db48821f3923/jars/classes.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/mobi.inthepocket.android/ibeaconscanner/1.2.2/6af14046351e8f2719bb55d03efaca493efa1e8b/ibeaconscanner-1.2.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
